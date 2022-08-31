@@ -66,7 +66,7 @@ if [ -e "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql.tbz ]; then
 else
   echo -e "Error: Compressed backup archive not found. Finished at: "$(date)"\n" >&2
   echo -e "Error: Compressed backup archive not found. Finished at: "$(date)"\n" | mail -s "Database backup restore fault" "$MYEMAIL"
-  curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore fault. Error: Compressed backup archive not found. Finished at: "$(date)"" &> /dev/null
+  curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore fault. Error: Compressed backup archive not found. Finished at: `date`" &> /dev/null
   sleep 5
   return $?
   fi
@@ -76,13 +76,13 @@ tar -xjf "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql.tbz --directory "${BACKUP_
 if mysql < "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql; then
   echo -e "Database backup restore finished. Finished at: "$(date)"\n"
   echo -e "Database backup restore finished. Finished at: "$(date)"\n" | mail -s "backup restore finished" "$MYEMAIL"
-  curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore finished. Finished at: "$(date)"" &> /dev/null
+  curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore finished. Finished at: `date`" &> /dev/null
   rm "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql
   sleep 5
 else
   echo -e "Database backup restore return non-zero code at: "$(date)"\n" >&2
   echo -e "Database backup restore return non-zero code at: "$(date)"\n" | mail -s "Database backup restore fault" "$MYEMAIL"
-  curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore return non-zero code at: "$(date)"" &> /dev/null
+  curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore return non-zero code at: `date`" &> /dev/null
   rm "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql
   sleep 5
   return $?

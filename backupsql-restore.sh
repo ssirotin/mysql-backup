@@ -97,6 +97,7 @@ fi
 if [ -e "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql.tbz ]; then
   echo "Found compressed backup archive now it will be unpacked"
 else
+  alert_fail
   echo -e "Error: Compressed backup archive not found. Finished at: "$(date)"\n" >&2
   echo -e "Error: Compressed backup archive not found. Finished at: "$(date)"\n" | mail -s "Database backup restore fault" "$MYEMAIL"
   curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore fault. Error: Compressed backup archive not found. Finished at: `date`" &> /dev/null
@@ -107,12 +108,14 @@ fi
 tar -xjf "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql.tbz --directory "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/ all.sql
 
 if mysql < "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql; then
+  alert_ok
   echo -e "Database backup restore finished. Finished at: "$(date)"\n"
   echo -e "Database backup restore finished. Finished at: "$(date)"\n" | mail -s "backup restore finished" "$MYEMAIL"
   curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore finished. Finished at: `date`" &> /dev/null
   rm "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}"/all.sql
   timer
 else
+  alert_fail
   echo -e "Database backup restore return non-zero code at: "$(date)"\n" >&2
   echo -e "Database backup restore return non-zero code at: "$(date)"\n" | mail -s "Database backup restore fault" "$MYEMAIL"
   curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="Database backup restore return non-zero code at: `date`" &> /dev/null
@@ -129,50 +132,64 @@ read -e -p "Enter the text of the message to send to the bot: " SEND_MESSAGE
 if [ -n "$SEND_MESSAGE" ]; then
   alert_ok
   curl -s -X POST https://api.telegram.org/bot"$BOTTOKEN"/sendMessage -d chat_id="$CHATID" -d text="$SEND_MESSAGE" &> /dev/null
-  echo -e "Message sent to bot\n"
+  echo "Message sent to bot"
   read -n 1 -p "Do you want to continue [Y/n]?: " KEY
-    case $KEY in
-      "n" | "N" ) menu;;
-      "y" | "Y" ) echo -e "\n"; send_message;;
-    esac
-else
-  alert_fail
-  echo -e "String length is zero!\n" >&2
-  read -n 1 -p "Do you want to continue [Y/n]?: " KEY
-    case $KEY in
+  case $KEY in
     "n" | "N" ) menu;;
     "y" | "Y" ) echo -e "\n"; send_message;;
-    esac
+     * ) echo -e "\n"; send_message;;
+  esac
+else
+  alert_fail
+  echo "String length is zero!" >&2
+  read -n 1 -p "Do you want to continue [Y/n]?: " KEY
+  case $KEY in
+    "n" | "N" ) menu;;
+    "y" | "Y" ) echo -e "\n"; send_message;;
+     * ) echo -e "\n"; send_message;;
+  esac
 fi
 }
 #####################################################
 
 ############# send file to telegram bot #############
 function send_file() {
-read -e -p "Enter the absolute path to the file: " SEND_FILE
-if [ -n "$SEND_FILE" ]; then
-  if [ -f "$SEND_FILE" ]; then
-    echo "Selected file "$SEND_FILE""
-  else
-    alert_fail
-    echo -e "File not exist!\n" >&2
-    send_file
-  fi
-  if [[ -r "$SEND_FILE" ]]; then
-    alert_ok
-    curl -s -F document=@"$SEND_FILE" https://api.telegram.org/bot"$BOTTOKEN"/sendDocument?chat_id="$CHATID"
-    echo
-    echo -e "File "$SEND_FILE" sent to bot\n"
-    send_file
-  else
-    alert_fail
-    echo -e "Permission denied\n" >&2
-    send_file
-  fi
-else
+read -e -p "Enter the absolute path to the file: (multiple files can be separated by a space): " SEND_FILES
+Array=($SEND_FILES)
+if [[ ${#Array[@]} = 0 ]]; then
   alert_fail
-  echo -e "You have not selected a file!\n" >&2
-  send_file
+  echo "You have not selected a file!" >&2
+  read -n 1 -p "Do you want to continue [Y/n]?: " KEY
+  case $KEY in
+    "n" | "N" ) menu;;
+    "y" | "Y" ) echo -e "\n"; send_file;;
+     * ) echo -e "\n"; send_file;;
+  esac
+else
+  for i in "${Array[@]}"
+  do
+    if [ ! -f "$i" ]; then
+      alert_fail
+      echo "File "$i" not exist!" >&2
+      continue
+    fi
+    if [ -r "$i" ]; then
+      alert_ok
+      curl -s -F document=@"$i" https://api.telegram.org/bot"$BOTTOKEN"/sendDocument?chat_id="$CHATID" &> /dev/null
+      echo "File "$i" sent to bot"
+      continue
+    else
+      alert_fail
+      echo "Permission denied "$i"" >&2
+      continue
+    fi
+  done
+  read -n 1 -p "Do you want to continue [Y/n]?: " KEY
+  case $KEY in
+    "n" | "N" ) menu;;
+    "y" | "Y" ) echo -e "\n"; send_file;;
+     * ) echo -e "\n"; send_file;;
+  esac
 fi
 }
 #####################################################

@@ -49,8 +49,8 @@ $SETCOLOR_FAILURE
 
 ################## function timer ###################
 function timer() {
-echo -n "exit to main menu: "
-SECS=5
+SECS=10
+echo -n "after "$SECS" seconds you will be moved to the main menu: "
 while [[ 0 -ne $SECS ]]; do
   echo -n "$SECS.."
   sleep 1

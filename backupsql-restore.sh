@@ -79,9 +79,7 @@ fi
 ############# backup restore function ###############
 function backup_restore() {
 echo "Started at: ""$(date)"
-echo -e "Mysql database backups are stored in a directory "$HOME"/backup_sql now you will be moved to this directory\nsucces\n"
-cd "$BACKUP_DATA_DIR"
-echo -e "This directory contains several backups sorted by dates:\n"$(ls --color)"\n"
+echo -e "Mysql database backups are stored in a directory "$HOME"/backup_sql\nThis directory contains several backups sorted by dates:\n"$(ls $BACKUP_DATA_DIR --color)"\n"
 read -e -p "Select a backup and press Enter: " BACKUP_DIR
 if [[ -d "${BACKUP_DATA_DIR}"/"${BACKUP_DIR}" ]] && 
    [[ "$BACKUP_DIR" =~ (20[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|1[0-9]|2[0-9]|3[0-1]))_(0[0-9]|1[0-9]|2[0-4])([0-5][0-9]){2} ]]; then
